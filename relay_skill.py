@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 from flask import Flask
 from flask_ask import Ask, statement, question, session
+import datetime
+import threading
+import time
 
 import RPi.GPIO as GPIO
 import logging
@@ -19,9 +22,15 @@ relay = Ask(app, "/relay")
 #def homepage():
 #    return "Hello world"
 
+convert_map = {
+        'relay_number': int,
+        'time': 'time',
+        'duration': 'timedelta'
+        }
+
 @relay.launch
 def start_relay():
-    return question("which device or relay?")
+    return question("which device?")
 
 @relay.intent("AllOn")
 def relay_allon():
@@ -37,38 +46,43 @@ def relay_alloff():
         GPIO.output(p, GPIO.LOW)
     return statement("okay")
 
-@relay.intent("On", convert={'relay_number': int})
-def relay_on(device, relay_number):
+@relay.intent("On", convert=convert_map)
+def relay_on(device, relay_number, time, duration):
 
     if device:
         relay_number = devices[device]
 
-    app.logger.info('Turning on relay #{}'.format(relay_number))
-    GPIO.output(pins[relay_number-1], GPIO.HIGH)
+    if not duration == None:
+        gpio_on_duration(relay_number, duration.seconds)
+    else:
+        gpio_on(relay_number)
+
     return statement("okay")
 
-@relay.intent("Off", convert={'relay_number': int})
-def relay_off(device, relay_number):
+@relay.intent("Off", convert=convert_map)
+def relay_off(device, relay_number, time, duration):
 
     if device:
         relay_number = devices[device]
 
-    app.logger.info('Turning off relay #{}'.format(relay_number))
-    GPIO.output(pins[relay_number-1], GPIO.LOW)
+    if not duration == None:
+        gpio_off_duration(relay_number, duration.seconds)
+    else:
+        gpio_off(relay_number)
+
     return statement("okay")
 
-@relay.intent("Toggle", convert={'relay_number': int})
+@relay.intent("Toggle", convert=convert_map)
 def relay_toggle(device, relay_number):
 
     if device:
         relay_number = devices[device]
 
     if GPIO.input(pins[relay_number-1]) == 1:
-        app.logger.info('Toggling off relay #{}'.format(relay_number))
-        GPIO.output(pins[relay_number-1], GPIO.LOW)
+        gpio_off(relay_number)
     else:
-        app.logger.info('Toggling on relay #{}'.format(relay_number))
-        GPIO.output(pins[relay_number-1], GPIO.HIGH)
+        gpio_on(relay_number)
+
     return statement("okay")
 
 @relay.intent("AMAZON.FallbackIntent")
@@ -86,6 +100,24 @@ def cancel():
 @relay.intent("AMAZON.HelpIntent")
 def help():
     return statement("feature not implemented yet. go yell at brian")
+
+def gpio_on_duration(relay_num, sec):
+    app.logger.info("Turning on relay #{} for {} seconds".format(relay_num, sec))
+    GPIO.output(pins[relay_num-1], GPIO.HIGH)
+    threading.Timer(sec, gpio_off, [relay_num]).start()
+
+def gpio_off_duration(relay_num, sec):
+    app.logger.info("Turning off relay #{} for {} seconds".format(relay_num, sec))
+    GPIO.output(pins[relay_num-1], GPIO.LOW)
+    threading.Timer(sec, gpio_on, [relay_num]).start()
+
+def gpio_on(relay_num):
+    app.logger.info('Turning on relay #{}'.format(relay_num))
+    GPIO.output(pins[relay_num-1], GPIO.HIGH)
+
+def gpio_off(relay_num):
+    app.logger.info('Turning off relay #{}'.format(relay_num))
+    GPIO.output(pins[relay_num-1], GPIO.LOW)
 
 def main():
     GPIO.setmode(GPIO.BCM)
