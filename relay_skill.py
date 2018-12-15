@@ -9,6 +9,8 @@ import RPi.GPIO as GPIO
 import logging
 from logging.handlers import RotatingFileHandler
 
+time_offset = -5
+
 pins = [10, 23, 25, 27, 8, 18, 7, 19, 24, 26, 5, 16, 12, 21, 13, 20]
 devices = {
         "AC":16,
@@ -55,11 +57,11 @@ def relay_on(device, relay_number, time, duration):
     if not duration == None:
         gpio_on_duration(relay_number, duration.seconds)
     elif not time == None:
-        now = datetime.now() - timedelta(minutes=300)
+        now = datetime.now() + timedelta(minutes=time_offset*60)
         target = datetime.combine(now, time)
         if now.time() > time:
             target = target + timedelta(1, 0)
-        gpio_on_delay(relay_number, (target-now).seconds)
+        gpio_on_delay(relay_number, (target-now).seconds, time)
     else:
         gpio_on(relay_number)
 
@@ -74,11 +76,11 @@ def relay_off(device, relay_number, time, duration):
     if not duration == None:
         gpio_off_duration(relay_number, duration.seconds)
     elif not time == None:
-        now = datetime.now() - timedelta(minutes=300)
+        now = datetime.now() + timedelta(minutes=time_offset*60)
         target = datetime.combine(now, time)
         if now.time() > time:
             target = target + timedelta(1, 0)
-        gpio_off_delay(relay_number, (target-now).seconds)
+        gpio_off_delay(relay_number, (target-now).seconds, time)
     else:
         gpio_off(relay_number)
 
@@ -113,12 +115,12 @@ def cancel():
 def help():
     return statement("feature not implemented yet. go yell at brian")
 
-def gpio_on_delay(relay_num, sec):
-    app.logger.info("Turning on relay #{} after {} seconds".format(relay_num, sec))
+def gpio_on_delay(relay_num, sec, t):
+    app.logger.info("Turning on relay #{} after {} seconds (at {})".format(relay_num, sec, t))
     threading.Timer(sec, gpio_on, [relay_num]).start()
 
-def gpio_off_delay(relay_num, sec):
-    app.logger.info("Turning off relay #{} after {} seconds".format(relay_num, sec))
+def gpio_off_delay(relay_num, sec, t):
+    app.logger.info("Turning off relay #{} after {} seconds (at {})".format(relay_num, sec, t))
     threading.Timer(sec, gpio_off, [relay_num]).start()
 
 def gpio_on_duration(relay_num, sec):
