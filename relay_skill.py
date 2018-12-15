@@ -37,38 +37,38 @@ def relay_alloff():
         GPIO.output(p, GPIO.LOW)
     return statement("okay")
 
-@relay.intent("On")
+@relay.intent("On", convert={'relay_number': int})
 def relay_on(device, relay_number):
 
     if device:
         relay_number = devices[device]
 
     app.logger.info('Turning on relay #{}'.format(relay_number))
-    GPIO.output(pins[int(relay_number)-1], GPIO.HIGH)
+    GPIO.output(pins[relay_number-1], GPIO.HIGH)
     return statement("okay")
 
-@relay.intent("Off")
+@relay.intent("Off", convert={'relay_number': int})
 def relay_off(device, relay_number):
 
     if device:
         relay_number = devices[device]
 
     app.logger.info('Turning off relay #{}'.format(relay_number))
-    GPIO.output(pins[int(relay_number)-1], GPIO.LOW)
+    GPIO.output(pins[relay_number-1], GPIO.LOW)
     return statement("okay")
 
-@relay.intent("Toggle")
+@relay.intent("Toggle", convert={'relay_number': int})
 def relay_toggle(device, relay_number):
 
     if device:
         relay_number = devices[device]
 
-    if GPIO.input(pins[int(relay_number)-1]) == 1:
+    if GPIO.input(pins[relay_number-1]) == 1:
         app.logger.info('Toggling off relay #{}'.format(relay_number))
-        GPIO.output(pins[int(relay_number)-1], GPIO.LOW)
+        GPIO.output(pins[relay_number-1], GPIO.LOW)
     else:
         app.logger.info('Toggling on relay #{}'.format(relay_number))
-        GPIO.output(pins[int(relay_number)-1], GPIO.HIGH)
+        GPIO.output(pins[relay_number-1], GPIO.HIGH)
     #return statement("feature not implemented yet. go yell at brian")
     return statement("okay")
 
