@@ -69,8 +69,23 @@ def relay_toggle(device, relay_number):
     else:
         app.logger.info('Toggling on relay #{}'.format(relay_number))
         GPIO.output(pins[relay_number-1], GPIO.HIGH)
-    #return statement("feature not implemented yet. go yell at brian")
     return statement("okay")
+
+@relay.intent("AMAZON.FallbackIntent")
+def fallback():
+    return question("Sorry, I didn't understand that. Which?")
+
+@relay.intent("AMAZON.StopIntent")
+def stop():
+    return statement("ok")
+
+@relay.intent("AMAZON.CancelIntent")
+def cancel():
+    return statement("ok")
+
+@relay.intent("AMAZON.HelpIntent")
+def help():
+    return statement("feature not implemented yet. go yell at brian")
 
 def main():
     GPIO.setmode(GPIO.BCM)
