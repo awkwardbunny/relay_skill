@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from flask import Flask
 from flask_ask import Ask, statement, question, session
-import datetime
+from datetime import datetime, time, date, timedelta
 import threading
 import time
 
@@ -54,6 +54,12 @@ def relay_on(device, relay_number, time, duration):
 
     if not duration == None:
         gpio_on_duration(relay_number, duration.seconds)
+    elif not time == None:
+        now = datetime.now() - timedelta(minutes=300)
+        target = datetime.combine(now, time)
+        if now.time() > time:
+            target = target + timedelta(1, 0)
+        gpio_on_delay(relay_number, (target-now).seconds)
     else:
         gpio_on(relay_number)
 
@@ -67,6 +73,12 @@ def relay_off(device, relay_number, time, duration):
 
     if not duration == None:
         gpio_off_duration(relay_number, duration.seconds)
+    elif not time == None:
+        now = datetime.now() - timedelta(minutes=300)
+        target = datetime.combine(now, time)
+        if now.time() > time:
+            target = target + timedelta(1, 0)
+        gpio_off_delay(relay_number, (target-now).seconds)
     else:
         gpio_off(relay_number)
 
@@ -100,6 +112,14 @@ def cancel():
 @relay.intent("AMAZON.HelpIntent")
 def help():
     return statement("feature not implemented yet. go yell at brian")
+
+def gpio_on_delay(relay_num, sec):
+    app.logger.info("Turning on relay #{} after {} seconds".format(relay_num, sec))
+    threading.Timer(sec, gpio_on, [relay_num]).start()
+
+def gpio_off_delay(relay_num, sec):
+    app.logger.info("Turning off relay #{} after {} seconds".format(relay_num, sec))
+    threading.Timer(sec, gpio_off, [relay_num]).start()
 
 def gpio_on_duration(relay_num, sec):
     app.logger.info("Turning on relay #{} for {} seconds".format(relay_num, sec))
